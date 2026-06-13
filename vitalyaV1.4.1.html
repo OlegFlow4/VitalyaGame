@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Побег от Тун тун сахуров</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0a0a0a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+        }
+        
+        /* Основной контейнер игры */
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #2a2a2a 0%, #050505 100%);
+        }
+        
+        /* Размытие для фона */
+        .blur-effect {
+            filter: blur(15px) brightness(0.4);
+            transition: filter 0.5s ease;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* --- ГЛАВНОЕ МЕНЮ --- */
+        #mainMenu {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 30;
+            background: rgba(0, 0, 0, 0.2);
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+
+        @keyframes pulseGlow {
+            0% { text-shadow: 0 4px 15px rgba(255, 71, 87, 0.5); transform: scale(1); }
+            50% { text-shadow: 0 4px 30px rgba(255, 71, 87, 0.9), 0 0 10px rgba(255, 255, 255, 0.3); transform: scale(1.02); }
+            100% { text-shadow: 0 4px 15px rgba(255, 71, 87, 0.5); transform: scale(1); }
+        }
+
+        #mainMenu h1 {
+            font-size: 40px;
+            text-align: center;
+            color: #ff4757;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+            padding: 0 10px;
+            animation: pulseGlow 3s infinite ease-in-out;
+            line-height: 1.2;
+        }
+        
+        /* Кнопка-пасхалка версии */
+        .menu-version {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 15px;
+            color: #555;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        .menu-version:hover {
+            color: #ff3f34;
+        }
+
+        /* Кнопка настройки звука */
+        #muteBtn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 24px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        #muteBtn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        /* ИГРОВОЙ ЦЕНТР (МАГАЗИН И ПЕРСОНАЖИ) */
+        .menu-panels-container {
+            display: flex;
+            gap: 20px;
+            max-width: 90%;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .menu-panels-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            #mainMenu h1 { font-size: 28px; }
+        }
+
+        #shop, #charSelect {
+            background: rgba(30, 30, 30, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 20px 25px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            width: 320px;
+        }
+
+        #shop h2, #charSelect h2 {
+            font-size: 22px;
+            margin-bottom: 15px;
+            color: #ffd32a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .pixel-coin {
+            width: 24px; height: 24px;
+            image-rendering: pixelated;
+        }
+
+        #buyShieldBtn {
+            background: linear-gradient(135deg, #0fb9b1, #2bcbba);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            transition: all 0.2s ease;
+            box-shadow: 0 5px 0 #0a8a83;
+        }
+        #buyShieldBtn:hover:not(:disabled) { filter: brightness(1.1); }
+        #buyShieldBtn:active:not(:disabled) { transform: translateY(5px); box-shadow: none; }
+        #buyShieldBtn:disabled { background: #444; box-shadow: 0 5px 0 #222; color: #888; cursor: not-allowed; }
+
+        /* ВЫБОР ПЕРСОНАЖЕЙ CSS */
+        .char-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .char-card {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 8px 12px;
+            gap: 15px;
+            transition: all 0.2s ease;
+        }
+        .char-card.active-char {
+            border-color: #0be881;
+            background: rgba(11, 232, 129, 0.15);
+        }
+        .char-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .char-info {
+            flex-grow: 1;
+            text-align: left;
+        }
+        .char-name { font-weight: bold; font-size: 16px; display: block; }
+        .char-status { font-size: 12px; color: #aaa; }
+        
+        .char-btn {
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            color: white;
+            min-width: 85px;
+        }
+        .btn-select { background: #ffa801; }
+        .btn-buy { background: #0fb9b1; }
+        .btn-equipped { background: #0be881; cursor: default; }
+
+        /* КНОПКИ МЕНЮ */
+        .menu-action-container {
+            display: flex;
+            gap: 15px;
+        }
+        .menu-btn {
+            width: 160px;
+            padding: 14px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        #playBtn { background: linear-gradient(135deg, #05c46b, #0be881); box-shadow: 0 5px 0 #048c4d; }
+        #playBtn:active { transform: translateY(5px); box-shadow: none; }
+        
+        #exitBtn { background: linear-gradient(135deg, #ff3f34, #ff5e57); box-shadow: 0 5px 0 #cc322a; }
+        #exitBtn:active { transform: translateY(5px); box-shadow: none; }
+
+        /* --- ВНУТРИИГРОВОЙ UI --- */
+        #ui {
+            position: absolute;
+            top: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none; 
+            align-items: center;
+            background: rgba(20, 20, 20, 0.75);
+            backdrop-filter: blur(8px);
+            padding: 12px 30px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 22px;
+            font-weight: bold;
+            z-index: 10;
+            white-space: nowrap;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+        }
+        .stat-group { display: flex; align-items: center; margin: 0 12px; }
+        .pixel-icon {
+            width: 30px; height: 30px; margin-right: 10px;
+            image-rendering: pixelated; shape-rendering: crispEdges;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        }
+        #hpText { color: #ff4757; min-width: 45px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        #shieldText { color: #0fb9b1; min-width: 45px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        #levelText { color: #ffa801; margin-left: 12px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        .ui-divider { margin: 0 8px; color: #555; }
+
+        /* Экран Game Over */
+        #gameOverScreen {
+            display: none;
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 20;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        #gameOverScreen h1 { font-size: 55px; color: #ff3f34; margin-bottom: 15px; text-shadow: 0 0 25px rgba(255, 63, 52, 0.6); }
+        #gameOverScreen p { font-size: 24px; margin-bottom: 20px; color: #eee; }
+        .gained-coins { color: #ffd32a; font-size: 28px; font-weight: bold; margin-bottom: 40px; }
+
+        #toMenuBtn {
+            padding: 16px 45px; font-size: 22px;
+            background: linear-gradient(135deg, #ffa801, #ffc048); color: #fff;
+            border: none; border-radius: 10px; cursor: pointer;
+            box-shadow: 0 6px 0 #cc8600; font-weight: bold; transition: all 0.2s ease;
+        }
+        #toMenuBtn:active { transform: translateY(6px); box-shadow: none; }
+
+        /* Сенсорное управление */
+        #touchControls {
+            display: none; position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            grid-template-columns: repeat(3, 70px); grid-template-rows: repeat(2, 70px); grid-gap: 15px; z-index: 10;
+        }
+        .touch-btn {
+            background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(6px); border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px; color: white; font-size: 30px; display: flex; justify-content: center; align-items: center;
+            touch-action: none;
+        }
+        .touch-btn:active { background: rgba(255, 255, 255, 0.4); }
+        #btnUp { grid-column: 2; grid-row: 1; }
+        #btnLeft { grid-column: 1; grid-row: 2; }
+        #btnDown { grid-column: 2; grid-row: 2; }
+        #btnRight { grid-column: 3; grid-row: 2; }
+
+        /* ЭКРАН ПАСХАЛКИ (ФЕЙК ВЫКЛЮЧЕНИЕ ПК) */
+        #shutdownOverlay {
+            display: none;
+            position: fixed;
+            top:0; left:0; width:100%; height:100%;
+            background-color: #005a9e; /* Цвет экрана завершения работы Windows */
+            z-index: 99999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+        }
+        .spinner {
+            width: 50px; height: 50px;
+            border: 5px solid rgba(255,255,255,0.2);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 1s infinite linear;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div id="gameContainer">
+    
+    <div id="shutdownOverlay">
+        <div class="spinner"></div>
+        <div style="font-size: 24px;">Завершение работы...</div>
+    </div>
+
+    <div id="mainMenu">
+        <button id="muteBtn" title="Включить/Выключить звук">🔊</button>
+
+        <h1>Побег от<br>Тун тун сахуров</h1>
+        
+        <div class="menu-panels-container">
+            <div id="shop">
+                <h2>
+                    <svg class="pixel-coin" viewBox="0 0 8 8"><path fill="#ffd32a" d="M2,0 h4 v1 h1 v4 h-1 v1 h-1 v1 h-2 v-1 h-1 v-1 h-1 v-4 h1 z"/></svg>
+                    Баланс: <span id="menuCoinsText">0</span>
+                </h2>
+                <button id="buyShieldBtn">
+                    <svg class="pixel-icon" viewBox="0 0 7 8" style="width:20px;height:20px; margin-right:5px;"><path fill="#fff" d="M1,0 h5 v1 h1 v4 h-1 v1 h-1 v1 h-1 v1 h-1 v-1 h-1 v-1 h-1 v-1 h-1 v-4 h1 z"/></svg>
+                    Купить Щит +60 HP (80 шт)
+                </button>
+            </div>
+
+            <div id="charSelect">
+                <h2>Гардероб</h2>
+                <div class="char-grid">
+                    <div class="char-card active-char" id="card-vitalik">
+                        <img src="https://i.pinimg.com/736x/12/50/4e/12504e401c28d525efc7382a8c5f6c96.jpg" class="char-avatar">
+                        <div class="char-info">
+                            <span class="char-name">Виталик</span>
+                            <span class="char-status" id="status-vitalik">Выбран</span>
+                        </div>
+                        <button class="char-btn btn-equipped" id="btn-vitalik" onclick="selectCharacter('vitalik')">Выбран</button>
+                    </div>
+                    <div class="char-card" id="card-kotost">
+                        <img src="https://static.wikia.nocookie.net/mems/images/3/30/%D0%9A%D0%BE%D1%82%D0%BE%D1%81%D1%82%D1%8C.png/revision/latest/scale-to-width-down/250?cb=20260405055559&path-prefix=ru" class="char-avatar">
+                        <div class="char-info">
+                            <span class="char-name">Котость</span>
+                            <span class="char-status" id="status-kotost">Цена: 40 монеты</span>
+                        </div>
+                        <button class="char-btn btn-buy" id="btn-kotost" onclick="selectCharacter('kotost')">Купить</button>
+                    </div>
+                    <div class="char-card" id="card-statham">
+                        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQiIMBkQvKCC1eRw_V8FXbmCG5trRCl9qwmIw&s" class="char-avatar">
+                        <div class="char-info">
+                            <span class="char-name">Стэтхэм</span>
+                            <span class="char-status" id="status-statham">Цена: 100 монет</span>
+                        </div>
+                        <button class="char-btn btn-buy" id="btn-statham" onclick="selectCharacter('statham')">Купить</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="menu-action-container">
+            <button class="menu-btn" id="playBtn">Играть</button>
+            <button class="menu-btn" id="exitBtn">Выйти</button>
+        </div>
+        <div class="menu-version" id="easterEggVersion">V1.4RELEASE</div>
+    </div>
+
+    <div id="ui">
+        <div class="stat-group">
+            <svg class="pixel-icon" viewBox="0 0 7 6"><path fill="#ff4757" d="M1,0 h1 v1 h-1 z M2,0 h1 v1 h-1 z M4,0 h1 v1 h-1 z M5,0 h1 v1 h-1 z M0,1 h7 v1 h-7 z M0,2 h7 v1 h-7 z M1,3 h5 v1 h-5 z M2,4 h3 v1 h-3 z M3,5 h1 v1 h-1 z"/></svg>
+            <span id="hpText">100</span>
+        </div>
+        <div class="stat-group" id="shieldGroup">
+            <svg class="pixel-icon" viewBox="0 0 7 8"><path fill="#0fb9b1" d="M1,0 h5 v1 h1 v4 h-1 v1 h-1 v1 h-1 v1 h-1 v-1 h-1 v-1 h-1 v-1 h-1 v-4 h1 z"/></svg>
+            <span id="shieldText">0</span>
+        </div>
+        <span class="ui-divider">|</span>
+        <span id="levelText">УР: 1 (20с)</span>
+    </div>
+
+    <canvas id="gameCanvas" class="blur-effect"></canvas>
+
+    <div id="gameOverScreen">
+        <h1>ВЫ ПОГИБЛИ</h1>
+        <p id="finalLevelScore">Вы дошли до 1 уровня</p>
+        <div class="gained-coins">Получено монет: <span id="earnedCoinsText">0</span></div>
+        <button id="toMenuBtn">В меню</button>
+    </div>
+
+    <div id="touchControls">
+        <div class="touch-btn" id="btnUp">▲</div>
+        <div class="touch-btn" id="btnLeft">◀</div>
+        <div class="touch-btn" id="btnDown">▼</div>
+        <div class="touch-btn" id="btnRight">▶</div>
+    </div>
+</div>
+
+<script>
+    // === ЭЛЕМЕНТЫ ===
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const mainMenu = document.getElementById('mainMenu');
+    const ui = document.getElementById('ui');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const touchControls = document.getElementById('touchControls');
+    const shutdownOverlay = document.getElementById('shutdownOverlay');
+    const easterEggVersion = document.getElementById('easterEggVersion');
+    
+    const hpText = document.getElementById('hpText');
+    const shieldText = document.getElementById('shieldText');
+    const shieldGroup = document.getElementById('shieldGroup');
+    const levelText = document.getElementById('levelText');
+    const menuCoinsText = document.getElementById('menuCoinsText');
+    const finalLevelScore = document.getElementById('finalLevelScore');
+    const earnedCoinsText = document.getElementById('earnedCoinsText');
+    
+    const playBtn = document.getElementById('playBtn');
+    const exitBtn = document.getElementById('exitBtn');
+    const buyShieldBtn = document.getElementById('buyShieldBtn');
+    const toMenuBtn = document.getElementById('toMenuBtn');
+    const muteBtn = document.getElementById('muteBtn');
+
+    // === АУДИО СИСТЕМА ===
+    const bgMusic = new Audio('song1.mp3');
+    bgMusic.loop = true;
+    const gameOverMusic = new Audio('song2.mp3');
+    const buySound = new Audio('song3.mp3');
+
+    let isMuted = false;
+
+    muteBtn.addEventListener('click', () => {
+        isMuted = !isMuted;
+        muteBtn.innerText = isMuted ? '🔇' : '🔊';
+        bgMusic.muted = isMuted;
+        gameOverMusic.muted = isMuted;
+        buySound.muted = isMuted;
+    });
+
+    // === БАЗА ПЕРСОНАЖЕЙ ===
+    const characterData = {
+        vitalik: { name: "Виталик", cost: 0, src: "https://i.pinimg.com/736x/12/50/4e/12504e401c28d525efc7382a8c5f6c96.jpg" },
+        kotost: { name: "Котость", cost: 40, src: "https://static.wikia.nocookie.net/mems/images/3/30/%D0%9A%D0%BE%D1%82%D0%BE%D1%81%D1%82%D1%8C.png/revision/latest/scale-to-width-down/250?cb=20260405055559&path-prefix=ru" },
+        statham: { name: "Стэтхэм", cost: 100, src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQiIMBkQvKCC1eRw_V8FXbmCG5trRCl9qwmIw&s" }
+    };
+
+    let totalCoins = 0;
+    let currentLevelEarnedCoins = 0;
+    let unlockedCharacters = ['vitalik'];
+    let selectedCharacter = 'vitalik';
+
+    let gameState = 'MENU'; 
+
+    // Настройка холста
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Картинки скинов и врагов
+    const playerImg = new Image();
+    playerImg.src = characterData[selectedCharacter].src; // Загружаем текущего выбранного
+
+    const enemyImg = new Image();
+    enemyImg.src = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQSoqZks9TYWAQjfkoNM1Quz4VrmP13z6nwTA&s';
+
+    // Свойства игрока и сущностей
+    let player = { x: 0, y: 0, size: 60, speed: 5, hp: 100, shield: 0, invulnerable: false, invulnTimer: 0 };
+    let currentLevel = 1;
+    let levelTimer = 20 * 60; 
+    let enemySpeed = 1.2;     
+    const ENEMY_COUNT = 5;
+    const ENEMY_SIZE = 65;
+    let enemies = [];
+
+    // Клавиатура
+    const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+    window.addEventListener('keydown', (e) => { if (e.key in keys) keys[e.key] = true; });
+    window.addEventListener('keyup', (e) => { if (e.key in keys) keys[e.key] = false; });
+
+    // Тач-кнопки
+    const touchState = { up: false, down: false, left: false, right: false };
+    function setupTouchBtn(id, direction) {
+        const btn = document.getElementById(id);
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); touchState[direction] = true; });
+        btn.addEventListener('touchend', (e) => { e.preventDefault(); touchState[direction] = false; });
+    }
+    setupTouchBtn('btnUp', 'up');
+    setupTouchBtn('btnDown', 'down');
+    setupTouchBtn('btnLeft', 'left');
+    setupTouchBtn('btnRight', 'right');
+
+    function setupControlsForDevice() {
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile && gameState === 'PLAYING') {
+            touchControls.style.display = 'grid';
+        } else {
+            touchControls.style.display = 'none';
+        }
+    }
+
+    // === ЛОГИКА ГАРДЕРОБА И МАГАЗИНА ===
+    function updateMenuUI() {
+        menuCoinsText.innerText = totalCoins;
+        
+        // Кнопка щита
+        if (totalCoins >= 80) {
+            buyShieldBtn.disabled = false;
+            buyShieldBtn.innerHTML = `<svg class="pixel-icon" viewBox="0 0 7 8" style="width:20px;height:20px; margin-right:5px;"><path fill="#fff" d="M1,0 h5 v1 h1 v4 h-1 v1 h-1 v1 h-1 v1 h-1 v-1 h-1 v-1 h-1 v-1 h-1 v-4 h1 z"/></svg> Купить Щит +60 HP (80 шт)`;
+        } else {
+            buyShieldBtn.disabled = true;
+            buyShieldBtn.innerHTML = `Не хватает монет (нужно 80)`;
+        }
+
+        // Обновление карточек персонажей
+        Object.keys(characterData).forEach(id => {
+            const card = document.getElementById(`card-${id}`);
+            const btn = document.getElementById(`btn-${id}`);
+            const status = document.getElementById(`status-${id}`);
+
+            // Сбрасываем классы активности
+            card.classList.remove('active-char');
+            btn.className = 'char-btn';
+
+            if (selectedCharacter === id) {
+                card.classList.add('active-char');
+                status.innerText = "Выбран";
+                btn.innerText = "Выбран";
+                btn.classList.add('btn-equipped');
+            } else if (unlockedCharacters.includes(id)) {
+                status.innerText = "Разблокирован";
+                btn.innerText = "Выбрать";
+                btn.classList.add('btn-select');
+            } else {
+                status.innerText = `Цена: ${characterData[id].cost} шт`;
+                btn.innerText = "Купить";
+                btn.classList.add('btn-buy');
+            }
+        });
+    }
+
+    function selectCharacter(id) {
+        if (unlockedCharacters.includes(id)) {
+            selectedCharacter = id;
+            playerImg.src = characterData[id].src; // Меняем текстуру
+            updateMenuUI();
+        } else {
+            // Покупка
+            const cost = characterData[id].cost;
+            if (totalCoins >= cost) {
+                totalCoins -= cost;
+                unlockedCharacters.push(id);
+                selectedCharacter = id;
+                playerImg.src = characterData[id].src;
+                
+                buySound.currentTime = 0;
+                buySound.play().catch(e => {});
+                
+                updateMenuUI();
+            }
+        }
+    }
+
+    buyShieldBtn.addEventListener('click', () => {
+        if (totalCoins >= 80) {
+            totalCoins -= 80;
+            player.shield += 60; 
+            buySound.currentTime = 0;
+            buySound.play().catch(e => {});
+            updateMenuUI();
+        }
+    });
+
+    // ПАСХАЛКА: Выключение ПК при клике на версию
+    easterEggVersion.addEventListener('click', () => {
+        bgMusic.pause();
+        gameOverMusic.pause();
+        buySound.pause();
+        
+        // Включаем синий/экран выключения
+        shutdownOverlay.style.display = 'flex';
+        
+        // Через 2.5 секунды экран гаснет полностью и вкладка "умирает"
+        setTimeout(() => {
+            shutdownOverlay.style.backgroundColor = '#000000';
+            shutdownOverlay.innerHTML = ''; // Тьма
+            
+            // Бесконечный цикл, симулирующий выключение (вкладка зависает намертво)
+            setTimeout(() => {
+                while(true) {}
+            }, 500);
+        }, 2500);
+    });
+
+    function openMenu() {
+        gameState = 'MENU';
+        mainMenu.style.display = 'flex';
+        ui.style.display = 'none';
+        gameOverScreen.style.display = 'none';
+        touchControls.style.display = 'none';
+        canvas.classList.add('blur-effect');
+        
+        updateMenuUI();
+        
+        player.x = canvas.width / 2 - player.size / 2;
+        player.y = canvas.height / 2 - player.size / 2;
+        enemies = [generateEnemyPosition(), generateEnemyPosition(), generateEnemyPosition()];
+    }
+
+    exitBtn.addEventListener('click', () => {
+        if(confirm("Точно хотите выйти?")) {
+            document.body.innerHTML = "<div style='display:flex;height:100%;justify-content:center;align-items:center;color:white;font-size:30px;text-align:center;'>Игра закрыта.<br>Можете закрыть вкладку.</div>";
+        }
+    });
+
+    toMenuBtn.addEventListener('click', openMenu);
+    playBtn.addEventListener('click', startGame);
+
+    function startGame() {
+        gameState = 'PLAYING';
+        mainMenu.style.display = 'none';
+        ui.style.display = 'flex';
+        canvas.classList.remove('blur-effect');
+        
+        gameOverMusic.pause();
+        gameOverMusic.currentTime = 0;
+        bgMusic.currentTime = 0;
+        bgMusic.play().catch(e => {});
+
+        setupControlsForDevice();
+
+        player.x = canvas.width / 2 - player.size / 2;
+        player.y = canvas.height / 2 - player.size / 2;
+        player.hp = 100;
+        player.invulnerable = false;
+        player.invulnTimer = 0;
+        
+        currentLevel = 1;
+        levelTimer = 20 * 60;
+        enemySpeed = 1.2;
+        currentLevelEarnedCoins = 0;
+        
+        updateUiText();
+
+        enemies = [];
+        for (let i = 0; i < ENEMY_COUNT; i++) {
+            enemies.push(generateEnemyPosition());
+        }
+    }
+
+    function generateEnemyPosition() {
+        let x, y;
+        const side = Math.floor(Math.random() * 4);
+        if (side === 0) { x = Math.random() * canvas.width; y = -ENEMY_SIZE; }
+        else if (side === 1) { x = canvas.width + ENEMY_SIZE; y = Math.random() * canvas.height; }
+        else if (side === 2) { x = Math.random() * canvas.width; y = canvas.height + ENEMY_SIZE; }
+        else { x = -ENEMY_SIZE; y = Math.random() * canvas.height; }
+        return { x, y, size: ENEMY_SIZE };
+    }
+
+    function updateUiText() {
+        hpText.innerText = player.hp;
+        if(player.shield > 0) {
+            shieldGroup.style.display = 'flex';
+            shieldText.innerText = player.shield;
+        } else {
+            shieldGroup.style.display = 'none';
+        }
+        const secondsLeft = Math.ceil(levelTimer / 60);
+        levelText.innerText = `УР: ${currentLevel} (${secondsLeft}с)`;
+    }
+
+    function gameLoop() {
+        if (gameState === 'PLAYING') update();
+        render(); 
+        requestAnimationFrame(gameLoop);
+    }
+
+    function update() {
+        levelTimer--;
+        if (levelTimer <= 0) {
+            currentLevel++;
+            levelTimer = 20 * 60; 
+            enemySpeed += 0.4;
+            currentLevelEarnedCoins += 20;
+            totalCoins += 20; 
+        }
+        updateUiText();
+
+        if (keys.w || keys.ArrowUp || touchState.up) player.y -= player.speed;
+        if (keys.s || keys.ArrowDown || touchState.down) player.y += player.speed;
+        if (keys.a || keys.ArrowLeft || touchState.left) player.x -= player.speed;
+        if (keys.d || keys.ArrowRight || touchState.right) player.x += player.speed;
+
+        if (player.x < 0) player.x = 0;
+        if (player.y < 0) player.y = 0;
+        if (player.x > canvas.width - player.size) player.x = canvas.width - player.size;
+        if (player.y > canvas.height - player.size) player.y = canvas.height - player.size;
+
+        if (player.invulnerable) {
+            player.invulnTimer--;
+            if (player.invulnTimer <= 0) player.invulnerable = false;
+        }
+
+        enemies.forEach(enemy => {
+            const dx = (player.x + player.size / 2) - (enemy.x + enemy.size / 2);
+            const dy = (player.y + player.size / 2) - (enemy.y + enemy.size / 2);
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance > 0) {
+                enemy.x += (dx / distance) * enemySpeed;
+                enemy.y += (dy / distance) * enemySpeed;
+            }
+
+            if (!player.invulnerable &&
+                enemy.x < player.x + player.size && enemy.x + enemy.size > player.x &&
+                enemy.y < player.y + player.size && enemy.y + enemy.size > player.y) {
+                
+                let damage = 20;
+                if (player.shield > 0) {
+                    if (player.shield >= damage) {
+                        player.shield -= damage;
+                        damage = 0;
+                    } else {
+                        damage -= player.shield;
+                        player.shield = 0;
+                    }
+                }
+                
+                player.hp -= damage;
+                if (player.hp < 0) player.hp = 0;
+                updateUiText();
+
+                if (player.hp <= 0) {
+                    gameState = 'GAMEOVER';
+                    touchControls.style.display = 'none';
+                    ui.style.display = 'none';
+                    
+                    bgMusic.pause();
+                    gameOverMusic.currentTime = 0;
+                    gameOverMusic.play().catch(e => {});
+
+                    finalLevelScore.innerText = `Вы дошли до ${currentLevel} уровня`;
+                    earnedCoinsText.innerText = currentLevelEarnedCoins;
+                    gameOverScreen.style.display = 'flex';
+                } else {
+                    player.invulnerable = true;
+                    player.invulnTimer = 60; 
+                }
+            }
+        });
+    }
+
+    function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Враги
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 10;
+        enemies.forEach(enemy => {
+            ctx.drawImage(enemyImg, enemy.x, enemy.y, enemy.size, enemy.size);
+        });
+
+        // Игрок
+        if (gameState !== 'PLAYING' || !player.invulnerable || Math.floor(player.invulnTimer / 5) % 2 === 0) {
+            ctx.drawImage(playerImg, player.x, player.y, player.size, player.size);
+        }
+        ctx.shadowBlur = 0; 
+        
+        // Эффект щита
+        if (gameState === 'PLAYING' && player.shield > 0) {
+            ctx.beginPath();
+            ctx.arc(player.x + player.size/2, player.y + player.size/2, player.size/1.3, 0, Math.PI * 2);
+            ctx.shadowColor = '#0fb9b1';
+            ctx.shadowBlur = 15;
+            ctx.strokeStyle = 'rgba(15, 185, 177, 0.8)';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            ctx.fillStyle = 'rgba(15, 185, 177, 0.25)';
+            ctx.fill();
+            ctx.shadowBlur = 0; 
+        }
+    }
+
+    let imagesLoaded = 0;
+    function onImageLoad() {
+        imagesLoaded++;
+        if (imagesLoaded === 2) {
+            openMenu(); 
+            gameLoop();
+        }
+    }
+    playerImg.onload = onImageLoad;
+    enemyImg.onload = onImageLoad;
+</script>
+
+</body>
+</html>
